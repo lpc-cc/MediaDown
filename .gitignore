@@ -1,0 +1,26 @@
+# Python 缓存文件
+__pycache__/
+*.pyc
+*.pyo
+
+# 下载的视频和图片（用户下载的内容）
+backend/downloads/
+
+# 制作图标过程中的中间文件
+logo_*.png
+page_full.png
+/MediaDown.png
+/MediaDown.ico
+
+# 测试用的下载文件
+tw_*.jpg
+
+# Claude Code 本地配置
+.claude/
+
+# 日志文件
+*.log
+
+# 系统文件
+Thumbs.db
+desktop.ini

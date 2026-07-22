@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <title>视频/图片下载器</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" href="/MediaDown.ico" type="image/x-icon">
+</head>
+<body>
+
+<div class="container">
+
+    <!-- Header -->
+    <header class="header">
+        <div class="logo-icon">🎬</div>
+        <h1 class="logo-text">Media<span class="gradient-text">Down</span></h1>
+        <p class="subtitle">粘贴链接，下载原画质视频与图片</p>
+    </header>
+
+    <!-- Input Section -->
+    <section class="input-section">
+        <div class="input-group">
+            <span class="input-icon">🔗</span>
+            <input
+                type="url"
+                id="urlInput"
+                class="url-input"
+                placeholder="粘贴视频或图片链接..."
+                autocomplete="off"
+                autofocus
+            >
+            <button id="pasteBtn" class="btn-paste" title="从剪贴板粘贴">
+                📋
+            </button>
+            <button id="parseBtn" class="btn-parse">
+                <span class="btn-text">解析</span>
+                <span class="btn-icon">→</span>
+            </button>
+        </div>
+        <div class="platform-pills">
+            <span class="pill">YouTube</span><span class="pill">Bilibili</span><span class="pill">Instagram</span><span class="pill">X</span><span class="pill">Reddit</span><span class="pill">Pinterest</span>
+        </div>
+    </section>
+
+    <!-- Loading State -->
+    <div id="loadingState" class="loading-state" style="display:none;">
+        <div class="spinner"></div>
+        <p class="loading-text">正在解析链接...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="errorState" class="error-state" style="display:none;">
+        <div class="error-card">
+            <span class="error-icon">⚠️</span>
+            <p id="errorMessage" class="error-message"></p>
+        </div>
+    </div>
+
+    <!-- Preview Card -->
+    <section id="previewCard" class="preview-card" style="display:none;">
+        <div class="card-thumbnail-wrapper">
+            <img id="cardThumbnail" class="card-thumbnail" src="" alt="缩略图" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+            <div class="thumbnail-placeholder" style="display:none;">
+                <span class="placeholder-icon">🎞️</span>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <h3 id="cardTitle" class="card-title">视频标题</h3>
+
+            <div class="card-meta">
+                <span id="cardPlatform" class="meta-badge platform-badge"></span>
+                <span id="cardDuration" class="meta-item">⏱ --</span>
+                <span id="cardSize" class="meta-item">📦 --</span>
+                <span id="cardUploader" class="meta-item">👤 --</span>
+            </div>
+
+            <!-- Format Selector -->
+            <div class="format-selector" id="formatSelector" style="display:none;">
+                <label class="format-label">画质选择</label>
+                <div id="formatList" class="format-list"></div>
+            </div>
+
+            <!-- Download Button -->
+            <button id="downloadBtn" class="btn-download">
+                <span class="btn-text">⬇ 下载原画质</span>
+            </button>
+
+            <!-- Download Progress -->
+            <div id="downloadProgress" class="download-progress" style="display:none;">
+                <div class="progress-bar-wrapper">
+                    <div id="progressBar" class="progress-bar"></div>
+                </div>
+                <div class="progress-info">
+                    <span id="progressPercent">0%</span>
+                    <span id="progressTimer">00:00</span>
+                </div>
+                <div id="progressDetail" class="progress-detail"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p class="footer-text">
+            仅供学习与研究使用 · 请尊重版权
+        </p>
+    </footer>
+
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
