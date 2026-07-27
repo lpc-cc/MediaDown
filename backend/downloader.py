@@ -335,7 +335,7 @@ def _run_download(task_id: str, url: str, format_id: str):
 
     has_ffmpeg = _find_ffmpeg() is not None
     default_fmt = (
-        "bv[ext=mp4]+ba[ext=m4a]/b[ext=mp4]/bv*+ba/b"
+        "b[ext=mp4]/bv[ext=mp4]+ba[ext=m4a]/b/bv*+ba/b"
     ) if has_ffmpeg else "b[ext=mp4]/b"
 
     def progress_hook(d):
