@@ -362,12 +362,10 @@ def _run_download(task_id: str, url: str, format_id: str):
         "progress_hooks": [progress_hook],
         "socket_timeout": 120,
         "retries": 3,
-        # 字幕下载 + 嵌入视频（语言控制在最少以免被限流）
+        # 字幕下载 + 嵌入视频（不开启自动字幕以避免 YouTube 429 限流）
         "writesubtitles": True,
-        "writeautomaticsub": True,
-        "subtitleslangs": ["zh-Hans", "en"],
+        "subtitleslangs": ["zh-Hans", "en", "zh-CN", "zh"],
         "subtitlesformat": "srt",
-        "ignoreerrors": True,
         "postprocessors": [{"key": "FFmpegEmbedSubtitle"}],
     })
 
