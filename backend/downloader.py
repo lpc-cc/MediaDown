@@ -358,15 +358,16 @@ def _run_download(task_id: str, url: str, format_id: str):
     opts.update({
         "outtmpl": str(DOWNLOAD_DIR / "%(title).100s_%(id)s.%(ext)s"),
         "format": format_id if format_id != "best" else default_fmt,
-        "merge_output_format": "mp4",
+        "merge_output_format": "mkv",
         "progress_hooks": [progress_hook],
         "socket_timeout": 120,
         "retries": 3,
-        # 字幕下载：手动字幕全下 + 自动字幕限主要语言
+        # 字幕下载 + 嵌入视频
         "writesubtitles": True,
         "writeautomaticsub": True,
         "subtitleslangs": ["zh-Hans", "zh-CN", "zh", "zh-TW", "en", "ja", "ko"],
         "subtitlesformat": "srt",
+        "postprocessors": [{"key": "FFmpegEmbedSubtitle"}],
     })
 
     try:
