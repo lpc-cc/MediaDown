@@ -361,7 +361,9 @@ def _run_download(task_id: str, url: str, format_id: str):
         "merge_output_format": "mkv",
         "progress_hooks": [progress_hook],
         "socket_timeout": 120,
-        "retries": 3,
+        "retries": 10,
+        "fragment_retries": 10,
+        "retry_sleep": lambda n: min(5 * (2 ** (n - 1)), 60),
         # 字幕下载 + 嵌入视频（不开启自动字幕以避免 YouTube 429 限流）
         "writesubtitles": True,
         "subtitleslangs": ["zh-Hans", "en", "zh-CN", "zh"],
