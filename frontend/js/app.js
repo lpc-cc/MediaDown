@@ -351,12 +351,12 @@
 
                     // 状态处理
                     if (task.status === "done") {
-                        // 下载完成，获取文件
+                        // 下载完成，获取视频文件 + 缩略图
                         stopPolling();
                         progressBar.style.width = "100%";
                         progressPercent.textContent = "100% — 正在保存...";
                         downloadBtn.querySelector(".btn-text").textContent = "💾 保存中...";
-                        fetchFile(taskId);
+                        fetchFile(taskId, task.thumb_filename);
                     } else if (task.status === "error") {
                         stopPolling();
                         showToast("❌ " + (task.error || "下载失败"), "error");
@@ -372,7 +372,7 @@
         }, 1000);
     }
 
-    function fetchFile(taskId) {
+    function fetchFile(taskId, thumbFilename) {
         fetch("/api/file/" + taskId)
             .then(function (res) {
                 if (!res.ok) {
@@ -381,7 +381,6 @@
                     });
                 }
                 return res.blob().then(function (blob) {
-                    // 从 Content-Disposition 提取文件名
                     var disposition = res.headers.get("Content-Disposition") || "";
                     var filename = "";
                     var match = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
@@ -390,6 +389,7 @@
                 });
             })
             .then(function (result) {
+                // 保存视频文件
                 var blobUrl = window.URL.createObjectURL(result.blob);
                 var a = document.createElement("a");
                 a.style.display = "none";
@@ -399,11 +399,41 @@
                 a.click();
                 window.URL.revokeObjectURL(blobUrl);
                 document.body.removeChild(a);
-
+                // 视频保存成功，接着下载缩略图
+                if (thumbFilename) {
+                    fetchThumb(taskId, thumbFilename);
+                    return;
+                }
                 showToast("✅ 下载完成！文件已保存", "success");
             })
             .catch(function (err) {
                 showToast("❌ " + (err.message || "保存文件失败"), "error");
+            })
+            .finally(function () {
+                resetDownloadUI();
+            });
+    }
+
+    function fetchThumb(taskId, thumbFilename) {
+        fetch("/api/thumb/" + taskId)
+            .then(function (res) {
+                if (!res.ok) return Promise.reject();
+                return res.blob();
+            })
+            .then(function (blob) {
+                var blobUrl = window.URL.createObjectURL(blob);
+                var a = document.createElement("a");
+                a.style.display = "none";
+                a.href = blobUrl;
+                a.download = thumbFilename || "thumbnail.jpg";
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(blobUrl);
+                document.body.removeChild(a);
+                showToast("✅ 视频 + 缩略图已保存", "success");
+            })
+            .catch(function () {
+                showToast("✅ 视频已保存（缩略图下载失败）", "success");
             })
             .finally(function () {
                 resetDownloadUI();

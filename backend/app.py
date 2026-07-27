@@ -60,7 +60,7 @@ def api_progress(task_id):
     task = get_task(task_id)
     if not task:
         return _error("任务不存在或已过期", "TASK_NOT_FOUND", 404)
-    return jsonify({
+    resp = {
         "success": True,
         "task": {
             "id": task["id"], "status": task["status"], "progress": task["progress"],
@@ -68,7 +68,28 @@ def api_progress(task_id):
             "downloaded": task["downloaded"], "total": task["total"],
             "filename": task["filename"], "error": task["error"],
         },
-    })
+    }
+    # 缩略图信息（视频下载完成后才有）
+    if task.get("thumb_filename"):
+        resp["task"]["thumb_filename"] = task["thumb_filename"]
+    return jsonify(resp)
+
+
+@app.route("/api/thumb/<task_id>", methods=["GET"])
+def api_thumb(task_id):
+    """下载缩略图文件。"""
+    task = get_task(task_id)
+    if not task:
+        return _error("任务不存在或已过期", "TASK_NOT_FOUND", 404)
+    thumb_path = task.get("thumb_path", "")
+    if not thumb_path:
+        return _error("该视频没有缩略图", "NO_THUMB", 404)
+    filepath = Path(thumb_path)
+    if not filepath.exists():
+        return _error("缩略图已被清理", "FILE_GONE", 404)
+    return send_file(filepath, as_attachment=True,
+                     download_name=task.get("thumb_filename", filepath.name),
+                     mimetype="image/jpeg")
 
 
 @app.route("/api/preview/<path:filename>", methods=["GET"])

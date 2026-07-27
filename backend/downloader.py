@@ -371,11 +371,14 @@ def _run_download(task_id: str, url: str, format_id: str):
             # 保存配套文案
             _save_description(filepath, info)
             # 下载缩略图
-            _download_thumbnail(filepath, info)
+            thumb_path = _download_thumbnail(filepath, info)
             task["status"] = "done"
             task["progress"] = 100.0
             task["filepath"] = str(filepath)
             task["filename"] = Path(filepath).name
+            if thumb_path:
+                task["thumb_path"] = thumb_path
+                task["thumb_filename"] = Path(thumb_path).name
     except yt_dlp.utils.DownloadError as e:
         task["status"] = "error"
         task["error"] = _map_error(e).user_message
@@ -403,11 +406,11 @@ def _map_error(e: yt_dlp.utils.DownloadError) -> "DownloaderError":
     return DownloaderError(f"解析失败：{e}", code="PARSE_ERROR")
 
 
-def _download_thumbnail(filepath, info: dict):
-    """下载视频缩略图，保存为同名 _thumb 文件。"""
+def _download_thumbnail(filepath, info: dict) -> str | None:
+    """下载视频缩略图，保存为同名 _thumb 文件。返回缩略图路径。"""
     thumbnail_url = info.get("thumbnail", "")
     if not thumbnail_url:
-        return
+        return None
 
     import requests as req
     try:
@@ -417,12 +420,13 @@ def _download_thumbnail(filepath, info: dict):
         if resp.status_code == 200 and len(resp.content) > 0:
             if isinstance(filepath, str):
                 filepath = Path(filepath)
-            # 保持原扩展名，加 _thumb 后缀
             ext = thumbnail_url.split("?")[0].rsplit(".", 1)[-1] or "jpg"
             thumb_path = filepath.with_name(f"{filepath.stem}_thumb.{ext}")
             thumb_path.write_bytes(resp.content)
+            return str(thumb_path)
     except Exception:
         pass  # 缩略图下载失败不影响视频下载
+    return None
 
 
 def _save_description(filepath, info: dict):
