@@ -72,6 +72,9 @@ def api_progress(task_id):
     # 缩略图信息（视频下载完成后才有）
     if task.get("thumb_filename"):
         resp["task"]["thumb_filename"] = task["thumb_filename"]
+    # 字幕文件列表
+    if task.get("sub_filenames"):
+        resp["task"]["sub_filenames"] = task["sub_filenames"]
     return jsonify(resp)
 
 
@@ -90,6 +93,38 @@ def api_thumb(task_id):
     return send_file(filepath, as_attachment=True,
                      download_name=task.get("thumb_filename", filepath.name),
                      mimetype="image/jpeg")
+
+
+@app.route("/api/sub/<task_id>", methods=["GET"])
+def api_sub(task_id):
+    """下载字幕文件（打包为 zip 或单个文件）。"""
+    task = get_task(task_id)
+    if not task:
+        return _error("任务不存在或已过期", "TASK_NOT_FOUND", 404)
+    sub_paths = task.get("sub_paths", [])
+    if not sub_paths:
+        return _error("该视频没有字幕文件", "NO_SUB", 404)
+
+    # 单个字幕文件直接下载
+    if len(sub_paths) == 1:
+        filepath = Path(sub_paths[0])
+        if not filepath.exists():
+            return _error("字幕文件已被清理", "FILE_GONE", 404)
+        return send_file(filepath, as_attachment=True, download_name=filepath.name,
+                         mimetype="text/plain")
+
+    # 多个字幕文件打包为 zip
+    import io, zipfile
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for sp in sub_paths:
+            fp = Path(sp)
+            if fp.exists():
+                zf.write(fp, fp.name)
+    buf.seek(0)
+    video_name = Path(task["filename"]).stem if task.get("filename") else "subtitles"
+    return send_file(buf, as_attachment=True, download_name=f"{video_name}_subtitles.zip",
+                     mimetype="application/zip")
 
 
 @app.route("/api/preview/<path:filename>", methods=["GET"])

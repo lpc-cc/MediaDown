@@ -356,7 +356,7 @@
                         progressBar.style.width = "100%";
                         progressPercent.textContent = "100% — 正在保存...";
                         downloadBtn.querySelector(".btn-text").textContent = "💾 保存中...";
-                        fetchFile(taskId, task.thumb_filename);
+                        fetchFile(taskId, task.thumb_filename, task.sub_filenames);
                     } else if (task.status === "error") {
                         stopPolling();
                         showToast("❌ " + (task.error || "下载失败"), "error");
@@ -372,7 +372,7 @@
         }, 1000);
     }
 
-    function fetchFile(taskId, thumbFilename) {
+    function fetchFile(taskId, thumbFilename, subFilenames) {
         fetch("/api/file/" + taskId)
             .then(function (res) {
                 if (!res.ok) {
@@ -390,21 +390,24 @@
             })
             .then(function (result) {
                 // 保存视频文件
-                var blobUrl = window.URL.createObjectURL(result.blob);
-                var a = document.createElement("a");
-                a.style.display = "none";
-                a.href = blobUrl;
-                a.download = result.filename || currentInfo.title + ".mp4";
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(blobUrl);
-                document.body.removeChild(a);
-                // 视频保存成功，接着下载缩略图
+                saveBlob(result.blob, result.filename || currentInfo.title + ".mp4");
+                // 接着下载缩略图
                 if (thumbFilename) {
-                    fetchThumb(taskId, thumbFilename);
-                    return;
+                    return fetchThumb(taskId, thumbFilename);
                 }
-                showToast("✅ 下载完成！文件已保存", "success");
+            })
+            .then(function () {
+                // 接着下载字幕
+                if (subFilenames && subFilenames.length > 0) {
+                    return fetchSubs(taskId, subFilenames);
+                }
+            })
+            .then(function () {
+                // 全部完成
+                var parts = ["✅ 下载完成"];
+                if (thumbFilename) parts.push("+ 缩略图");
+                if (subFilenames && subFilenames.length > 0) parts.push("+ 字幕(" + subFilenames.length + "个)");
+                showToast(parts.join(" "), "success");
             })
             .catch(function (err) {
                 showToast("❌ " + (err.message || "保存文件失败"), "error");
@@ -414,29 +417,49 @@
             });
     }
 
+    function saveBlob(blob, filename) {
+        var blobUrl = window.URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.style.display = "none";
+        a.href = blobUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(blobUrl);
+        document.body.removeChild(a);
+    }
+
     function fetchThumb(taskId, thumbFilename) {
-        fetch("/api/thumb/" + taskId)
+        return fetch("/api/thumb/" + taskId)
             .then(function (res) {
-                if (!res.ok) return Promise.reject();
+                if (!res.ok) throw new Error("缩略图下载失败");
                 return res.blob();
             })
             .then(function (blob) {
-                var blobUrl = window.URL.createObjectURL(blob);
-                var a = document.createElement("a");
-                a.style.display = "none";
-                a.href = blobUrl;
-                a.download = thumbFilename || "thumbnail.jpg";
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(blobUrl);
-                document.body.removeChild(a);
-                showToast("✅ 视频 + 缩略图已保存", "success");
+                saveBlob(blob, thumbFilename || "thumbnail.jpg");
+            });
+    }
+
+    function fetchSubs(taskId, subFilenames) {
+        if (subFilenames.length === 1) {
+            // 单个字幕直接下载
+            return fetch("/api/sub/" + taskId)
+                .then(function (res) {
+                    if (!res.ok) throw new Error("字幕下载失败");
+                    return res.blob();
+                })
+                .then(function (blob) {
+                    saveBlob(blob, subFilenames[0]);
+                });
+        }
+        // 多个字幕打包下载
+        return fetch("/api/sub/" + taskId)
+            .then(function (res) {
+                if (!res.ok) throw new Error("字幕下载失败");
+                return res.blob();
             })
-            .catch(function () {
-                showToast("✅ 视频已保存（缩略图下载失败）", "success");
-            })
-            .finally(function () {
-                resetDownloadUI();
+            .then(function (blob) {
+                saveBlob(blob, subFilenames[0].replace(/\.[^.]+$/, "") + "_subtitles.zip");
             });
     }
 

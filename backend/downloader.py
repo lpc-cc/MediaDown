@@ -362,6 +362,11 @@ def _run_download(task_id: str, url: str, format_id: str):
         "progress_hooks": [progress_hook],
         "socket_timeout": 120,
         "retries": 3,
+        # 字幕下载：手动字幕全下 + 自动字幕限主要语言
+        "writesubtitles": True,
+        "writeautomaticsub": True,
+        "subtitleslangs": ["zh-Hans", "zh-CN", "zh", "zh-TW", "en", "ja", "ko"],
+        "subtitlesformat": "srt",
     })
 
     try:
@@ -372,6 +377,8 @@ def _run_download(task_id: str, url: str, format_id: str):
             _save_description(filepath, info)
             # 下载缩略图
             thumb_path = _download_thumbnail(filepath, info)
+            # 找到下载的字幕文件
+            sub_paths = _find_subtitle_files(filepath)
             task["status"] = "done"
             task["progress"] = 100.0
             task["filepath"] = str(filepath)
@@ -379,6 +386,9 @@ def _run_download(task_id: str, url: str, format_id: str):
             if thumb_path:
                 task["thumb_path"] = thumb_path
                 task["thumb_filename"] = Path(thumb_path).name
+            if sub_paths:
+                task["sub_paths"] = sub_paths
+                task["sub_filenames"] = [Path(s).name for s in sub_paths]
     except yt_dlp.utils.DownloadError as e:
         task["status"] = "error"
         task["error"] = _map_error(e).user_message
@@ -404,6 +414,19 @@ def _map_error(e: yt_dlp.utils.DownloadError) -> "DownloaderError":
     if "signature" in msg or "verify" in msg or "captcha" in msg:
         return DownloaderError("平台风控拦截，请稍后重试", code="ANTI_BOT")
     return DownloaderError(f"解析失败：{e}", code="PARSE_ERROR")
+
+
+def _find_subtitle_files(filepath) -> list[str]:
+    """找到与视频文件同名的字幕文件（.srt / .vtt）。"""
+    if isinstance(filepath, str):
+        filepath = Path(filepath)
+    stem = filepath.stem
+    parent = filepath.parent
+    subs = []
+    for f in parent.iterdir():
+        if f.is_file() and f.stem.startswith(stem) and f.suffix in (".srt", ".vtt"):
+            subs.append(str(f))
+    return subs
 
 
 def _download_thumbnail(filepath, info: dict) -> str | None:
