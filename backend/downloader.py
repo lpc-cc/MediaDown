@@ -358,7 +358,7 @@ def _run_download(task_id: str, url: str, format_id: str):
     opts.update({
         "outtmpl": str(DOWNLOAD_DIR / "%(title).100s_%(id)s.%(ext)s"),
         "format": format_id if format_id != "best" else default_fmt,
-        "merge_output_format": "mkv",
+        "merge_output_format": "mp4",
         "progress_hooks": [progress_hook],
         "socket_timeout": 120,
         "retries": 10,
